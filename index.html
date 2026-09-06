@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Рулетка</title>
+    <title>Колесо удачи</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
       :root {
@@ -42,14 +42,6 @@
         width: 280px;
         height: 280px;
         margin: 0 auto 25px;
-        perspective: 1000px;
-      }
-
-      .wheel-container {
-        width: 100%;
-        height: 100%;
-        position: relative;
-        transform-style: preserve-3d;
       }
 
       .wheel {
@@ -58,6 +50,8 @@
         border-radius: 50%;
         position: relative;
         transform-origin: center center;
+        /* Ключевое свойство для анимации */
+        transition: transform 4s cubic-bezier(0.17, 0.67, 0.08, 0.99);
         box-shadow: 0 0 0 4px var(--border-glow), 0 10px 30px rgba(0, 0, 0, 0.6);
         will-change: transform;
       }
@@ -77,7 +71,6 @@
         text-transform: uppercase;
         text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
         overflow: hidden;
-        backface-visibility: hidden;
       }
 
       .pointer {
@@ -115,10 +108,7 @@
         letter-spacing: 0.5px;
       }
 
-      button:active {
-        transform: scale(0.96);
-      }
-
+      button:active { transform: scale(0.96); }
       button:disabled {
         opacity: 0.7;
         cursor: not-allowed;
@@ -136,7 +126,6 @@
         text-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
       }
 
-      /* Цвета секторов — яркие и контрастные */
       .color-0 { background: #ff4757; }
       .color-1 { background: #ffa502; }
       .color-2 { background: #2ed573; }
@@ -151,9 +140,7 @@
     <h2>🎡 Колесо удачи</h2>
 
     <div class="wheel-wrapper">
-      <div class="wheel-container">
-        <div id="wheel" class="wheel"></div>
-      </div>
+      <div id="wheel" class="wheel"></div>
       <div class="pointer"></div>
     </div>
 
@@ -161,6 +148,7 @@
     <p id="result"></p>
 
     <script>
+      // Инициализация Telegram WebApp
       const tg = window.Telegram.WebApp;
       tg.ready();
       tg.expand();
@@ -170,19 +158,19 @@
       const resultEl = document.getElementById('result');
 
       const prizes = [
-        'Лиман🛍️',
-        'Эльбрус 🏅',
-        'Култук 🎁',
-        'Масляковка 🍕',
-        'Отпуск 👑',
-        'Саяны 🎉',
-        'Выходной ☕',
-        'Тыл 🚖'
+        'Скидка 15% 🛍️',
+        'Бонус 100 баллов 🏅',
+        'Сюрприз 🎁',
+        'Промокод на пиццу 🍕',
+        'VIP‑доступ на 3 дня 👑',
+        'Бесплатный стикерпак 🎉',
+        'Кофе в подарок ☕',
+        'Купон на такси 🚖'
       ];
 
       const sectorsCount = prizes.length;
 
-      // Рисуем секторы
+      // Генерация секторов
       for (let i = 0; i < sectorsCount; i++) {
         const sector = document.createElement('div');
         sector.className = `sector color-\${i}`;
@@ -200,29 +188,36 @@
         spinBtn.disabled = true;
         resultEl.textContent = '';
 
-        // Случайное количество оборотов + случайный угол
-        const randomTurns = Math.floor(Math.random() * 10) + 7; // чуть больше оборотов для красоты
+        // 1. Сначала задаем случайное вращение
+        const randomTurns = Math.floor(Math.random() * 10) + 7;
         const randomOffset = Math.floor(Math.random() * 360);
         const totalDeg = randomTurns * 360 + randomOffset;
 
+        // 2. ВАЖНО: Сбрасываем transition в none, чтобы мгновенно вернуть колесо в 0,
+        // если оно уже было повернуто, а затем ставим transition для анимации
+        wheel.style.transition = 'none';
+        wheel.style.transform = 'rotate(0deg)';
+        
+        // Принудительно вызываем перерисовку браузера (reflow), чтобы transition применился корректно
+        void wheel.offsetWidth; 
+
+        // 3. Теперь задаем плавное вращение
         wheel.style.transition = 'transform 4s cubic-bezier(0.17, 0.67, 0.08, 0.99)';
         wheel.style.transform = `rotate(\${totalDeg}deg)`;
 
         setTimeout(() => {
           const finalAngle = totalDeg % 360;
           const sectorAngle = 360 / sectorsCount;
-
-          // Вычисляем, какой сектор оказался под стрелкой
-          // Стрелка сверху (0 градусов), колесо крутится по часовой
+          
+          // Расчет выпавшего сектора
           let sectorIndex = Math.floor((360 - finalAngle) / sectorAngle);
           sectorIndex = sectorIndex % sectorsCount;
 
           const prize = prizes[sectorIndex];
           resultEl.textContent = `🎉 Выпало: \${prize}`;
-
           tg.sendData(prize);
 
-          // Возвращаем колесо в исходное состояние без анимации, чтобы можно было крутить снова
+          // Сброс состояния для следующего вращения
           setTimeout(() => {
             wheel.style.transition = 'none';
             wheel.style.transform = 'rotate(0deg)';
