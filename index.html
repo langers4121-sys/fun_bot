@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Рулетка</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+      body {
+        font-family: sans-serif;
+        background: #121212;
+        color: #fff;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        margin: 0;
+      }
+      .container {
+        text-align: center;
+      }
+      .wheel-wrapper {
+        position: relative;
+        width: 240px;
+        height: 240px;
+        margin: 20px auto;
+      }
+      .wheel {
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+        position: relative;
+        transform-origin: center center;
+        transition: transform 4s cubic-bezier(0.17, 0.67, 0.08, 0.99);
+        box-shadow: 0 0 15px rgba(0,0,0,0.5);
+      }
+      .sector {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
+        background-color: #ccc;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-size: 14px;
+        color: #000;
+        overflow: hidden;
+      }
+      /* Цвета секторов */
+      .color-0 { background-color: #ff5252; }
+      .color-1 { background-color: #ffab40; }
+      .color-2 { background-color: #a5d6a7; }
+      .color-3 { background-color: #64b5f6; }
+      .color-4 { background-color: #ba68c8; }
+      .color-5 { background-color: #fff176; }
+      .color-6 { background-color: #81c784; }
+      .color-7 { background-color: #4fc3f7; }
+
+      .pointer {
+        position: absolute;
+        top: -10px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 0;
+        height: 0;
+        border-left: 15px solid transparent;
+        border-right: 15px solid transparent;
+        border-top: 30px solid #fff;
+        z-index: 10;
+      }
+
+      button {
+        padding: 12px 24px;
+        font-size: 16px;
+        cursor: pointer;
+        background: #fff;
+        border: none;
+        border-radius: 6px;
+      }
+
+      #result {
+        margin-top: 15px;
+        font-weight: bold;
+        min-height: 24px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>🎡 Крути рулетку</h1>
+      <div class="wheel-wrapper">
+        <div id="wheel" class="wheel"></div>
+        <div class="pointer"></div>
+      </div>
+      <button id="spin-btn">Крутить</button>
+      <p id="result"></p>
+    </div>
+
+    <script>
+      const tg = window.Telegram.WebApp;
+      tg.ready();
+
+      const wheel = document.getElementById('wheel');
+      const spinBtn = document.getElementById('spin-btn');
+      const resultEl = document.getElementById('result');
+
+      const prizes = [
+        'Купон 10% 🛍️',
+        'Бонус 50 баллов 🏅',
+        'Сюрприз 🎁',
+        'Скидка 20% 📉',
+        'Подарок от магазина 🎀',
+        'Промокод на кофе ☕',
+        'Бесплатный стикерпак 🎉',
+        'VIP‑доступ на день 👑'
+      ];
+
+      const sectorsCount = prizes.length;
+
+      // Рисуем секторы
+      for (let i = 0; i < sectorsCount; i++) {
+        const sector = document.createElement('div');
+        sector.className = `sector color-${i}`;
+        sector.textContent = prizes[i];
+        const angle = (360 / sectorsCount) * i;
+        sector.style.transform = `rotate(${angle}deg)`;
+        wheel.appendChild(sector);
+      }
+
+      let isSpinning = false;
+
+      spinBtn.addEventListener('click', () => {
+        if (isSpinning) return;
+        isSpinning = true;
+
+        const randomTurns = Math.floor(Math.random() * 10) + 5;
+        const randomOffset = Math.floor(Math.random() * 360);
+        const totalDeg = randomTurns * 360 + randomOffset;
+
+        wheel.style.transform = `rotate(${totalDeg}deg)`;
+
+        setTimeout(() => {
+          const finalAngle = totalDeg % 360;
+          const sectorAngle = 360 / sectorsCount;
+          let sectorIndex = Math.floor((360 - finalAngle) / sectorAngle);
+          sectorIndex = sectorIndex % sectorsCount;
+
+          const prize = prizes[sectorIndex];
+          resultEl.textContent = `Выпало: ${prize}`;
+
+          tg.sendData(prize);
+
+          isSpinning = false;
+        }, 4000);
+      });
+    </script>
+  </body>
+</html>
